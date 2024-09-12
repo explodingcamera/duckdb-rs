@@ -39,7 +39,8 @@ extra_check = []
 [dependencies]
 libduckdb-sys = { workspace = true }
 hashlink = { workspace = true }
-chrono = { workspace = true, optional = true }
+chrono = { workspace = true, optional = true, features = ["clock"]}
+time = { workspace = true, optional = true, features = ["formatting", "macros", "parsing", "local-offset"]}
 serde_json = { workspace = true, optional = true }
 csv = { workspace = true, optional = true }
 url = { workspace = true, optional = true }
