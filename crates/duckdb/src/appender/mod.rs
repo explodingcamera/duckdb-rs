@@ -265,7 +265,7 @@ mod test {
 
     #[test]
     #[cfg(feature = "chrono")]
-    fn test_append_datetime() -> Result<()> {
+    fn test_append_chrono_datetime() -> Result<()> {
         use crate::params;
         use chrono::{NaiveDate, NaiveDateTime};
 
@@ -283,6 +283,35 @@ mod test {
         })?;
         assert_eq!(date, date2);
         assert_eq!(timestamp, timestamp2);
+        Ok(())
+    }
+
+    #[test]
+    #[cfg(feature = "time")]
+    fn test_append_time_datetime() -> Result<()> {
+        use crate::params;
+        use time::{Date, PrimitiveDateTime, Time};
+
+        let db = Connection::open_in_memory()?;
+        db.execute_batch("CREATE TABLE foo(x DATE, y TIME, z TIMESTAMP)")?;
+
+        let date = Date::from_iso_week_date(2024, 23, time::Weekday::Thursday).unwrap();
+        let time = Time::from_hms(18, 26, 53).unwrap();
+        let date_time = PrimitiveDateTime::new(date, time);
+        {
+            let mut app = db.appender("foo")?;
+            app.append_row(params![date, time, date_time])?;
+        }
+        let (date2, time2, date_time2) = db.query_row("SELECT x, y, z FROM foo", [], |row| {
+            Ok((
+                row.get::<_, Date>(0)?,
+                row.get::<_, Time>(1)?,
+                row.get::<_, PrimitiveDateTime>(2)?,
+            ))
+        })?;
+        assert_eq!(date, date2);
+        assert_eq!(time, time2);
+        assert_eq!(date_time, date_time2);
         Ok(())
     }
 

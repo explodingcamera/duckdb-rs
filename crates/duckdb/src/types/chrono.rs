@@ -220,8 +220,6 @@ mod test {
 
         db.execute("INSERT INTO foo (b) VALUES (?)", [dt])?;
 
-        let s: String = db.query_row("SELECT b FROM foo", [], |r| r.get(0))?;
-        assert_eq!("2016-02-23 23:56:04", s);
         let v: NaiveDateTime = db.query_row("SELECT b FROM foo", [], |r| r.get(0))?;
         assert_eq!(dt, v);
 

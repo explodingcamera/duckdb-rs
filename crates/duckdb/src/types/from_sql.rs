@@ -190,15 +190,34 @@ impl FromSql for bool {
 impl FromSql for String {
     #[inline]
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        #[cfg(all(feature = "time"))]
+        use time::macros::format_description;
+
         match value {
-            #[cfg(feature = "chrono")]
+            #[cfg(all(feature = "chrono", not(feature = "time")))]
             ValueRef::Date32(_) => Ok(chrono::NaiveDate::column_result(value)?.format("%F").to_string()),
-            #[cfg(feature = "chrono")]
+            #[cfg(all(feature = "chrono", not(feature = "time")))]
             ValueRef::Time64(..) => Ok(chrono::NaiveTime::column_result(value)?.format("%T%.f").to_string()),
-            #[cfg(feature = "chrono")]
+            #[cfg(all(feature = "chrono", not(feature = "time")))]
             ValueRef::Timestamp(..) => Ok(chrono::NaiveDateTime::column_result(value)?
                 .format("%F %T%.f")
                 .to_string()),
+
+            #[cfg(all(feature = "time"))]
+            ValueRef::Date32(_) => Ok(time::Date::column_result(value)?
+                .format(&format_description!("[year]-[month]-[day]"))
+                .map_err(|_| FromSqlError::InvalidType)?),
+            #[cfg(all(feature = "time"))]
+            ValueRef::Time64(..) => Ok(time::Time::column_result(value)?
+                .format(&format_description!("[hour]:[minute]:[second].[subsecond]"))
+                .map_err(|_| FromSqlError::InvalidType)?),
+            #[cfg(all(feature = "time"))]
+            ValueRef::Timestamp(..) => Ok(time::OffsetDateTime::column_result(value)?
+                .format(&format_description!(
+                    "[year]-[month]-[day] [hour]:[minute]:[second].[subsecond digits:3]"
+                ))
+                .map_err(|_| FromSqlError::InvalidType)?),
+
             _ => value.as_str().map(ToString::to_string),
         }
     }
